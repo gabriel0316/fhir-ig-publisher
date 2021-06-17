@@ -9,9 +9,9 @@ package org.hl7.fhir.igtools.templates;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -72,13 +72,13 @@ public class TemplateManager {
       Utilities.clearDirectory(templateDir);
     };
     List<String> scriptTemplates = new ArrayList<String>();
-    
+
     canExecute = true;
     NpmPackage npm;
     if (!inPlace) {
       installTemplate(template, rootFolder, templateDir, scriptTemplates, new ArrayList<String>(), 0);
     }
-    
+
     if (!autoMode) {
       canExecute = true; // nah, we don't care. locally, we'll build whatever people give us
     }
@@ -108,7 +108,7 @@ public class TemplateManager {
       installTemplate(baseTemplate+"#"+ver, rootFolder, templateDir, scriptIds, loadedIds, level + 1);
     }
     // npm.debugDump("template");
-    
+
     npm.unPackWithAppend(templateDir);
     Set<String> ext = new HashSet<>();
     boolean noScripts = true;
@@ -122,7 +122,7 @@ public class TemplateManager {
       }
       configs.add(config);
       noScripts = !config.has("script") && !config.has("targets");
-    }  
+    }
     if (noScripts) {
       for (NpmPackageFolder f : npm.getFolders().values()) {
         for (String n : f.listFiles()) {
@@ -136,7 +136,7 @@ public class TemplateManager {
       }
     }
     if (!noScripts) {
-      checkTemplateId(template, npm.name(), config == null ? "has file extensions: "+ ext : config.has("script") ? "template nominates a script" : 
+      checkTemplateId(template, npm.name(), config == null ? "has file extensions: "+ ext : config.has("script") ? "template nominates a script" :
         config.has("targets") ? "template nominates ant targets" : "has file extensions: "+ ext);
     }
     if (level==0 && configs.size() > 1) {
@@ -150,7 +150,7 @@ public class TemplateManager {
       TextFile.stringToFile(configString, configPath, false);
     }
   }
-  
+
   private void applyConfigChanges(JsonObject baseConfig, JsonObject deltaConfig) throws FHIRException {
     for (String key : deltaConfig.keySet()) {
       if (baseConfig.has(key)) {
@@ -181,18 +181,18 @@ public class TemplateManager {
 
   /**
    * If we get to here, we've found a template with active content. This code checks that it's authorised.
-   * 
+   *
    * If the IG is being run locally, we don't care - we'll always run it (see code in loadTemplate)
    * But on the ci-build, we only allow scripts that are approved by the FHIR product director
    * (as enforced by this code here).
-   * 
-   * We only allow scripts from packages loaded by package id, for known packages 
+   *
+   * We only allow scripts from packages loaded by package id, for known packages
    * (the only way to fiddle with packages loaded by id is through the code)
-   * 
+   *
    * todo:
    * - cross-check that the package id matches the github id (needs change on the ci-build infrastructure)
    *   this change would check that someone hasn't run a different template through the ci-build with the same id
-   *   
+   *
    * @param template
    * @param packageId
    * @return
@@ -203,9 +203,9 @@ public class TemplateManager {
       canExecute = false;
       templateThatCantExecute = template;
       templateReason = reason;
-    } else if (!Utilities.existsInList(packageId, 
+    } else if (!Utilities.existsInList(packageId,
         // if you are proposing to change this list, discuss with FHIR Product Director first
-        "fhir.test.template", 
+        "fhir.test.template",
         "fhir.base.template",
         "hl7.base.template",
         "hl7.fhir.template",
@@ -266,11 +266,14 @@ public class TemplateManager {
           template = template.replace("http://github.com", "https://github.com");
         }
 
+        String[] p = template.split("\\#");
+        template = p[0];
+
         URL url = new URL(zipUrl(template));
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         InputStream zip = connection.getInputStream();
-        return NpmPackage.fromZip(zip, true, url.toString()); 
+        return NpmPackage.fromZip(zip, true, url.toString());
       }
       throw new FHIRException("Unable to load template from "+template+" cannot find template. Use a github URL, a local directory, or #[folder] for a contained template");
     } catch (Exception e) {
@@ -282,10 +285,10 @@ public class TemplateManager {
     if (!template.startsWith("https://github.com")) {
       throw new FHIRException("Cannot refer to a template by URL unless referring to a github repository: "+template);
     } else if (Utilities.charCount(template, '/') == 4) {
-      return Utilities.pathURL(template, "archive", "master.zip");      
+      return Utilities.pathURL(template, "archive", "master.zip");
     } else if (Utilities.charCount(template, '/') == 6) {
       String[] p = template.split("\\/");
-      return Utilities.pathURL("https://github.com", p[3], p[4], "archive", p[6]+".zip");      
+      return Utilities.pathURL("https://github.com", p[3], p[4], "archive", p[6]+".zip");
     } else {
       throw new FHIRException("Template syntax in URL referring to a github repository was not understood: "+template);
     }
@@ -294,5 +297,5 @@ public class TemplateManager {
   public List<String> listTemplates() {
     return templateList;
   }
-  
+
 }
